@@ -1,8 +1,35 @@
 <script setup lang="ts">
 import type { FormError, FormSubmitEvent } from '#ui/types'
+import { getAnswer } from '~/repositories/chat';
+
+const messages = ref([]);
+const answer = ref(null);
+const question = ref("");
+
+const askQuestion = async () => {
+    messages.value.push({
+        role: "user",
+        content: question.value,
+    });
+    question.value = "";
+    const stream = await getAnswer({ messages: messages.value });
+    answer.value = {
+        role: "user",
+        content: "Generate a list of fun and interesting questions for a quiz",
+    };
+    useChatStream({
+        stream,
+        onChunk: ({ data }) => {
+            answer.value.content += data;
+        },
+        onReady: () => {
+            messages.value.push(answer.value);
+            answer.value = null;
+        },
+    });
+};
 
 const fileRef = ref<{ input: HTMLInputElement }>()
-const isDeleteAccountModalOpen = ref(false)
 
 const state = reactive({
     name: 'Christopher A. Smith',
@@ -16,8 +43,6 @@ const toast = useToast()
 function validate(state: any): FormError[] {
     const errors = []
     if (!state.name) errors.push({ path: 'name', message: 'Please enter your name.' })
-    if (!state.email) errors.push({ path: 'email', message: 'Please enter your email.' })
-    if ((state.password_current && !state.password_new) || (!state.password_current && state.password_new)) errors.push({ path: 'password', message: 'Please enter a valid password.' })
     return errors
 }
 
@@ -46,7 +71,7 @@ async function onSubmit(event: FormSubmitEvent<any>) {
 <template>
     <UDashboardPanelContent class="pb-24">
         
-        <UForm :state="state" :validate="validate" :validate-on="['submit']" @submit="onSubmit">
+        <UForm :state="state" :validate="validate" :validate-on="['submit']" @submit="askQuestion">
             
             <!--
             <UDashboardSection title="Author Profile"
@@ -83,40 +108,62 @@ async function onSubmit(event: FormSubmitEvent<any>) {
 
             -->
 
-            <UDashboardSection title="Content" description="Use this tool to prepare content for publishing.">
+            <UDashboardSection 
+                title="Content" 
+                description="Use this tool to prepare content for publishing.">
 
                 <UFormGroup name="title" label="Title"
-                    description="Will appear on receipts, invoices, and other communication." required
+                    description="The title of the article." required
                     class="grid grid-cols-2 gap-2 items-center" :ui="{ container: '' }">
                     <UInput v-model="state.title" autocomplete="off" size="md" />
                 </UFormGroup>
 
-                <UFormGroup name="content" label="Article" description="The article that is going to be published."
+                <UFormGroup name="content" label="Article" 
+                    description="The content of the article." required
                     class="grid grid-cols-2 gap-2" :ui="{ container: '' }">
-                    <UTextarea v-model="state.article" :rows="10" autoresize size="md" />
+                    <UTextarea v-model="state.content" :rows="10" autoresize size="md" />
                 </UFormGroup>
 
             </UDashboardSection>
 
             <UDivider class="mb-4" />
 
-            <UDashboardSection title="Search Engine Optimization" description="Prepares the recommended information for search engines.">
+            <UDashboardSection title="Process" description="Process the content and prepare for distribution">
+                <template #links>
+                    <UButton type="submit" label="Process" color="primary" />
+                </template>
+            </UDashboardSection>
 
-                    <UFormGroup name="seo_title" label="Meta Title"
-                        description="Content title for search engines." required
-                        class="grid grid-cols-2 gap-2 items-center" :ui="{ container: '' }">
-                        <UInput v-model="state.seo_title" autocomplete="off" size="md" />
-                    </UFormGroup>
+            <UDivider class="mb-4" />
 
-                    <UFormGroup name="seo_description" label="Meta Description" 
-                        description="Content description for search engines."
-                        class="grid grid-cols-2 gap-2" :ui="{ container: '' }">
-                        <UTextarea v-model="state.seo_description" :rows="5" autoresize size="md" />
-                    </UFormGroup>
+            <UDashboardSection 
+                title="Search Engine Optimization" 
+                description="Recommended information for search engines.">
 
-                </UDashboardSection>
+                <UFormGroup name="seo_title" label="Meta Title"
+                    description="Content title for search engines."
+                    class="grid grid-cols-2 gap-2 items-center" :ui="{ container: '' }">
+                    <UInput v-model="state.seo_title" autocomplete="off" size="md" />
+                </UFormGroup>
+
+                <UFormGroup name="seo_description" label="Meta Description" 
+                    description="Content description for search engines."
+                    class="grid grid-cols-2 gap-2" :ui="{ container: '' }">
+                    <UTextarea v-model="state.seo_description" :rows="5" autoresize size="md" />
+                </UFormGroup>
+
+            </UDashboardSection>
 
         </UForm>
+
+        <UDivider class="mb-4" />
+
+        <ul>
+          <li v-for="message in messages">
+            {{ message.role }}: {{ message.content }}
+          </li>
+          <li v-if="answer">{{ answer.role }}: {{ answer.content }}</li>
+        </ul>
 
     </UDashboardPanelContent>
 </template>

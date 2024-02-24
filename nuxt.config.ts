@@ -3,19 +3,16 @@
 
 export default defineNuxtConfig({
   runtimeConfig: {
-    // The private keys which are only available server-side
-    apiSecret: '123',
-    // Keys within public are also exposed client-side
-    public: {
-      apiBase: '/api'
-    }
+    openAi: {
+      secretKey: "",
+    },
   },
   devtools: { enabled: true },  
   extends: ['@nuxt/ui-pro'],
   modules: [
     '@nuxtjs/fontaine',
     '@nuxtjs/google-fonts',
-    '@nuxt/ui'
+    '@nuxt/ui',
   ],
   ui: {
     icons: ['ph', 'simple-icons']
@@ -32,5 +29,5 @@ export default defineNuxtConfig({
   },
   fontMetrics: {
     fonts: ['DM Sans']
-  }
+  },
 })
